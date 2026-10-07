@@ -77,6 +77,15 @@ img_utils = static_library('img-utils', 'img_utils.c', include_directories: incd
                            dependencies: [libavcodec, libplacebo], objects: img_utils_objects)
 
 # The actual tests.
+hwdec_policy_header = custom_target('hwdec-policy-functions',
+    input: files('../video/decode/vd_lavc.c', '../player/command.c',
+                 '../filters/f_decoder_wrapper.c', '../filters/f_decoder_wrapper.h'),
+    depend_files: files('vo_android_frame.py'),
+    output: 'hwdec_policy_functions.h',
+    command: [python, files('hwdec_policy.py'), '--generate', '@OUTPUT@'])
+hwdec_policy = executable('hwdec-policy', ['hwdec_policy.c', hwdec_policy_header])
+test('hwdec-policy', hwdec_policy)
+
 android_surface_frame_header = custom_target('android-surface-frame-functions',
     input: files('../video/out/android_common.c', '../video/out/vo.h',
                  '../player/command.c', '../video/out/vo.c',
@@ -136,6 +145,18 @@ gl_video = executable('gl-video', 'gl_video.c', objects: gl_video_objects,
                       dependencies: [libavutil, libplacebo], include_directories: incdir,
                       link_with: [img_utils, test_utils])
 test('gl-video', gl_video)
+
+android_osd_source = custom_target('android-osd-contracts-source',
+    input: files('../video/out/android_osd_overlay.c', '../video/out/aspect.c',
+                 '../player/command.c', '../sub/osd.c', '../sub/sd_ass.c',
+                 '../sub/sd_lavc.c'),
+    depend_files: files('vo_android_frame.py'),
+    output: 'android_osd_contracts.c',
+    command: [python, files('android_osd_overlay.py'), '--generate', '@OUTPUT@'])
+android_osd = executable('android-osd-contracts', android_osd_source,
+                         dependencies: libm)
+test('android-osd-contracts', android_osd)
+
 android_frame_functions = custom_target('android-frame-contracts-functions',
     input: files('../video/out/vo.c', '../player/playloop.c'),
     output: 'vo_android_frame_functions.h',
